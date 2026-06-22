@@ -62,3 +62,13 @@ class Statistics(BaseModel):
     total_points: int
     source_type_counts: dict[str, int]
     direction_counts: dict[str, int]
+
+
+class ImportResult(BaseModel):
+    """采样点导入结果。"""
+
+    total_count: int
+    success_count: int
+    skip_count: int
+    failed_count: int
+    errors: list[str]

@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, h } from 'vue'
 import { useAsyncState } from '@vueuse/core'
-import type { DataTableColumns } from 'naive-ui'
+import type { DataTableColumns, UploadFileInfo } from 'naive-ui'
 import { useMessage, useDialog } from 'naive-ui'
 import {
   fetchSamplingPoints,
   createSamplingPoint,
   updateSamplingPoint,
   deleteSamplingPoint,
+  exportSamplingPoints,
+  importSamplingPoints,
 } from '../api'
-import type { SamplingPoint, SamplingPointForm } from '../types'
+import type { SamplingPoint, SamplingPointForm, ImportResult } from '../types'
 import { emptyForm } from '../types'
 import SamplingPointFormPanel from '../components/SamplingPointFormPanel.vue'
 
@@ -19,6 +21,11 @@ const dialog = useDialog()
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const formModel = ref<SamplingPointForm>(emptyForm())
+
+const showImportModal = ref(false)
+const importLoading = ref(false)
+const importFile = ref<UploadFileInfo | null>(null)
+const importResult = ref<ImportResult | null>(null)
 
 const isEditing = computed(() => editingId.value !== null)
 
@@ -119,6 +126,54 @@ function confirmDelete(row: SamplingPoint) {
     },
   })
 }
+
+async function handleExport() {
+  try {
+    await exportSamplingPoints()
+    message.success('导出成功')
+  } catch {
+    message.error('导出失败，请稍后重试')
+  }
+}
+
+function openImportModal() {
+  importFile.value = null
+  importResult.value = null
+  showImportModal.value = true
+}
+
+function closeImportModal() {
+  showImportModal.value = false
+}
+
+function handleFileChange(options: { file: UploadFileInfo; fileList: UploadFileInfo[] }) {
+  importFile.value = options.file
+  importResult.value = null
+}
+
+async function handleImport() {
+  if (!importFile.value?.file) {
+    message.warning('请先选择要导入的 CSV 文件')
+    return
+  }
+  importLoading.value = true
+  try {
+    const result = await importSamplingPoints(importFile.value.file)
+    importResult.value = result
+    if (result.success_count > 0) {
+      await reload()
+    }
+    if (result.failed_count === 0) {
+      message.success(`导入完成：成功 ${result.success_count} 条，跳过 ${result.skip_count} 条`)
+    } else {
+      message.warning(`导入完成：成功 ${result.success_count} 条，跳过 ${result.skip_count} 条，失败 ${result.failed_count} 条`)
+    }
+  } catch (err: any) {
+    message.error(err?.response?.data?.detail || '导入失败，请检查文件格式')
+  } finally {
+    importLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -126,7 +181,11 @@ function confirmDelete(row: SamplingPoint) {
     <n-layout-header bordered style="padding: 16px 24px">
       <n-space align="center" justify="space-between" style="width: 100%">
         <n-h2 style="margin: 0">城市报时声采样点</n-h2>
-        <n-button type="primary" @click="openCreate">新增采样点</n-button>
+        <n-space>
+          <n-button @click="handleExport">导出</n-button>
+          <n-button @click="openImportModal">导入</n-button>
+          <n-button type="primary" @click="openCreate">新增采样点</n-button>
+        </n-space>
       </n-space>
     </n-layout-header>
 
@@ -154,6 +213,48 @@ function confirmDelete(row: SamplingPoint) {
           />
         </n-drawer-content>
       </n-drawer>
+
+      <n-modal v-model:show="showImportModal" preset="dialog" title="导入采样点" :mask-closable="false" :close-on-esc="true">
+        <n-space vertical :size="16" style="margin-top: 12px">
+          <n-upload
+            :show-file-list="true"
+            :max="1"
+            accept=".csv"
+            :custom-request="() => {}"
+            @change="handleFileChange"
+          >
+            <n-button>选择 CSV 文件</n-button>
+            <template #tip>
+              <n-text depth="3">仅支持 CSV 格式，需包含列：地点、声源类型、可听时间段、方向、备注</n-text>
+            </template>
+          </n-upload>
+
+          <div v-if="importResult" style="padding: 12px; background: #f5f7fa; border-radius: 6px">
+            <n-text strong>导入结果：</n-text>
+            <n-space vertical :size="6" style="margin-top: 8px">
+              <n-text>总计：{{ importResult.total_count }} 条</n-text>
+              <n-text type="success">成功：{{ importResult.success_count }} 条</n-text>
+              <n-text type="warning">跳过（地点重复）：{{ importResult.skip_count }} 条</n-text>
+              <n-text type="error">失败：{{ importResult.failed_count }} 条</n-text>
+              <div v-if="importResult.errors.length > 0" style="margin-top: 8px">
+                <n-text type="error" style="font-size: 13px">错误详情：</n-text>
+                <ul style="margin: 6px 0 0 18px; padding: 0">
+                  <li v-for="(err, idx) in importResult.errors" :key="idx" style="font-size: 12px; color: #d03050">
+                    {{ err }}
+                  </li>
+                </ul>
+              </div>
+            </n-space>
+          </div>
+        </n-space>
+
+        <template #action>
+          <n-space justify="end">
+            <n-button @click="closeImportModal">关闭</n-button>
+            <n-button type="primary" :loading="importLoading" @click="handleImport">开始导入</n-button>
+          </n-space>
+        </template>
+      </n-modal>
     </n-layout-content>
   </n-layout>
 </template>

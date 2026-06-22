@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type {
+  ImportResult,
   SamplingPoint,
   SamplingPointForm,
   SamplingRecord,
@@ -92,5 +93,32 @@ export async function deleteSamplingRecord(id: number): Promise<void> {
 /** 获取统计汇总数据 */
 export async function fetchStatistics(): Promise<Statistics> {
   const { data } = await api.get<Statistics>('/statistics')
+  return data
+}
+
+/** 导出采样点 CSV 文件 */
+export async function exportSamplingPoints(): Promise<void> {
+  const response = await api.get('/sampling-points/export', {
+    responseType: 'blob',
+  })
+  const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'sampling_points.csv'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+/** 导入采样点 CSV 文件 */
+export async function importSamplingPoints(file: File): Promise<ImportResult> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await api.post<ImportResult>('/sampling-points/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
   return data
 }

@@ -66,3 +66,12 @@ export interface Statistics {
   source_type_counts: Record<string, number>
   direction_counts: Record<string, number>
 }
+
+/** 采样点导入结果 */
+export interface ImportResult {
+  total_count: number
+  success_count: number
+  skip_count: number
+  failed_count: number
+  errors: string[]
+}
