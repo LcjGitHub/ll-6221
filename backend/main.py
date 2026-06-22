@@ -83,6 +83,128 @@ def list_sampling_points() -> list[SamplingPoint]:
         conn.close()
 
 
+@app.get("/api/sampling-points/export")
+def export_sampling_points() -> StreamingResponse:
+    """导出全部采样点为 CSV 文件。"""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT location, source_type, audible_time_period, direction, notes FROM sampling_points ORDER BY id ASC"
+        ).fetchall()
+
+        output = io.StringIO()
+        output.write("\ufeff")
+        writer = csv.writer(output)
+        writer.writerow(["地点", "声源类型", "可听时间段", "方向", "备注"])
+        for row in rows:
+            writer.writerow([
+                row["location"],
+                row["source_type"],
+                row["audible_time_period"],
+                row["direction"],
+                row["notes"],
+            ])
+
+        output.seek(0)
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv; charset=utf-8",
+            headers={
+                "Content-Disposition": "attachment; filename=sampling_points.csv"
+            },
+        )
+    finally:
+        conn.close()
+
+
+@app.post("/api/sampling-points/import", response_model=ImportResult)
+def import_sampling_points(file: UploadFile = File(...)) -> ImportResult:
+    """批量导入采样点，跳过地点重复的条目。"""
+    if not file.filename or not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="仅支持 CSV 文件")
+
+    content = file.file.read().decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(content))
+
+    field_mapping = {
+        "地点": "location",
+        "声源类型": "source_type",
+        "可听时间段": "audible_time_period",
+        "方向": "direction",
+        "备注": "notes",
+    }
+
+    headers = reader.fieldnames or []
+    missing_fields = [cn for cn in field_mapping if cn not in headers]
+    if missing_fields:
+        raise HTTPException(
+            status_code=400,
+            detail=f"CSV 缺少必要列：{', '.join(missing_fields)}",
+        )
+
+    conn = get_connection()
+    try:
+        total_count = 0
+        success_count = 0
+        skip_count = 0
+        failed_count = 0
+        errors: list[str] = []
+
+        for idx, row in enumerate(reader, start=2):
+            total_count += 1
+            location = (row.get("地点") or "").strip()
+            source_type = (row.get("声源类型") or "").strip()
+            audible_time_period = (row.get("可听时间段") or "").strip()
+            direction = (row.get("方向") or "").strip()
+            notes = (row.get("备注") or "").strip()
+
+            if not location:
+                failed_count += 1
+                errors.append(f"第 {idx} 行：地点不能为空")
+                continue
+            if not source_type:
+                failed_count += 1
+                errors.append(f"第 {idx} 行：声源类型不能为空")
+                continue
+            if not audible_time_period:
+                failed_count += 1
+                errors.append(f"第 {idx} 行：可听时间段不能为空")
+                continue
+            if not direction:
+                failed_count += 1
+                errors.append(f"第 {idx} 行：方向不能为空")
+                continue
+
+            existing = conn.execute(
+                "SELECT id FROM sampling_points WHERE location = ?",
+                (location,),
+            ).fetchone()
+            if existing is not None:
+                skip_count += 1
+                continue
+
+            conn.execute(
+                """
+                INSERT INTO sampling_points
+                    (location, source_type, audible_time_period, direction, notes)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (location, source_type, audible_time_period, direction, notes),
+            )
+            success_count += 1
+
+        conn.commit()
+        return ImportResult(
+            total_count=total_count,
+            success_count=success_count,
+            skip_count=skip_count,
+            failed_count=failed_count,
+            errors=errors,
+        )
+    finally:
+        conn.close()
+
+
 @app.get("/api/sampling-points/{point_id}", response_model=SamplingPoint)
 def get_sampling_point(point_id: int) -> SamplingPoint:
     """获取单个采样点。"""
@@ -325,127 +447,6 @@ def get_statistics() -> Statistics:
             total_points=total_points,
             source_type_counts=source_type_counts,
             direction_counts=direction_counts,
-        )
-    finally:
-        conn.close()
-
-
-@app.get("/api/sampling-points/export")
-def export_sampling_points() -> StreamingResponse:
-    """导出全部采样点为 CSV 文件。"""
-    conn = get_connection()
-    try:
-        rows = conn.execute(
-            "SELECT location, source_type, audible_time_period, direction, notes FROM sampling_points ORDER BY id ASC"
-        ).fetchall()
-
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow(["地点", "声源类型", "可听时间段", "方向", "备注"])
-        for row in rows:
-            writer.writerow([
-                row["location"],
-                row["source_type"],
-                row["audible_time_period"],
-                row["direction"],
-                row["notes"],
-            ])
-
-        output.seek(0)
-        return StreamingResponse(
-            iter([output.getvalue()]),
-            media_type="text/csv; charset=utf-8",
-            headers={
-                "Content-Disposition": "attachment; filename=sampling_points.csv"
-            },
-        )
-    finally:
-        conn.close()
-
-
-@app.post("/api/sampling-points/import", response_model=ImportResult)
-def import_sampling_points(file: UploadFile = File(...)) -> ImportResult:
-    """批量导入采样点，跳过地点重复的条目。"""
-    if not file.filename or not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="仅支持 CSV 文件")
-
-    content = file.file.read().decode("utf-8-sig")
-    reader = csv.DictReader(io.StringIO(content))
-
-    field_mapping = {
-        "地点": "location",
-        "声源类型": "source_type",
-        "可听时间段": "audible_time_period",
-        "方向": "direction",
-        "备注": "notes",
-    }
-
-    headers = reader.fieldnames or []
-    missing_fields = [cn for cn in field_mapping if cn not in headers]
-    if missing_fields:
-        raise HTTPException(
-            status_code=400,
-            detail=f"CSV 缺少必要列：{', '.join(missing_fields)}",
-        )
-
-    conn = get_connection()
-    try:
-        total_count = 0
-        success_count = 0
-        skip_count = 0
-        failed_count = 0
-        errors: list[str] = []
-
-        for idx, row in enumerate(reader, start=2):
-            total_count += 1
-            location = (row.get("地点") or "").strip()
-            source_type = (row.get("声源类型") or "").strip()
-            audible_time_period = (row.get("可听时间段") or "").strip()
-            direction = (row.get("方向") or "").strip()
-            notes = (row.get("备注") or "").strip()
-
-            if not location:
-                failed_count += 1
-                errors.append(f"第 {idx} 行：地点不能为空")
-                continue
-            if not source_type:
-                failed_count += 1
-                errors.append(f"第 {idx} 行：声源类型不能为空")
-                continue
-            if not audible_time_period:
-                failed_count += 1
-                errors.append(f"第 {idx} 行：可听时间段不能为空")
-                continue
-            if not direction:
-                failed_count += 1
-                errors.append(f"第 {idx} 行：方向不能为空")
-                continue
-
-            existing = conn.execute(
-                "SELECT id FROM sampling_points WHERE location = ?",
-                (location,),
-            ).fetchone()
-            if existing is not None:
-                skip_count += 1
-                continue
-
-            conn.execute(
-                """
-                INSERT INTO sampling_points
-                    (location, source_type, audible_time_period, direction, notes)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (location, source_type, audible_time_period, direction, notes),
-            )
-            success_count += 1
-
-        conn.commit()
-        return ImportResult(
-            total_count=total_count,
-            success_count=success_count,
-            skip_count=skip_count,
-            failed_count=failed_count,
-            errors=errors,
         )
     finally:
         conn.close()
