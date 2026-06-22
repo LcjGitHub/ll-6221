@@ -4,6 +4,47 @@ import type { FormInst, FormRules, SelectOption } from 'naive-ui'
 import type { SamplingRecordForm } from '../types'
 import type { SamplingPoint } from '../types'
 
+interface LocalFormState {
+  point_id: number | null
+  sampling_date: number | null
+  actual_chime_time: number | null
+  noise_level: string
+  sampler_name: string
+  description: string
+}
+
+function parseDateStringToTimestamp(dateStr: string | null): number | null {
+  if (!dateStr) return null
+  const date = new Date(dateStr + 'T00:00:00')
+  return isNaN(date.getTime()) ? null : date.getTime()
+}
+
+function parseTimeStringToTimestamp(timeStr: string | null): number | null {
+  if (!timeStr) return null
+  const parts = timeStr.split(':')
+  if (parts.length < 2) return null
+  const date = new Date()
+  date.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0)
+  return isNaN(date.getTime()) ? null : date.getTime()
+}
+
+function formatTimestampToDate(ts: number | null): string {
+  if (!ts) return ''
+  const date = new Date(ts)
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function formatTimestampToTime(ts: number | null): string {
+  if (!ts) return ''
+  const date = new Date(ts)
+  const h = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  return `${h}:${min}`
+}
+
 const props = defineProps<{
   model: SamplingRecordForm
   loading: boolean
@@ -16,12 +57,25 @@ const emit = defineEmits<{
 }>()
 
 const formRef = ref<FormInst | null>(null)
-const form = reactive<SamplingRecordForm>({ ...props.model })
+
+const form = reactive<LocalFormState>({
+  point_id: props.model.point_id,
+  sampling_date: parseDateStringToTimestamp(props.model.sampling_date),
+  actual_chime_time: parseTimeStringToTimestamp(props.model.actual_chime_time),
+  noise_level: props.model.noise_level,
+  sampler_name: props.model.sampler_name,
+  description: props.model.description,
+})
 
 watch(
   () => props.model,
   (value) => {
-    Object.assign(form, value)
+    form.point_id = value.point_id
+    form.sampling_date = parseDateStringToTimestamp(value.sampling_date)
+    form.actual_chime_time = parseTimeStringToTimestamp(value.actual_chime_time)
+    form.noise_level = value.noise_level
+    form.sampler_name = value.sampler_name
+    form.description = value.description
   },
   { deep: true }
 )
@@ -60,7 +114,15 @@ const rules: FormRules = {
 
 async function handleSubmit() {
   await formRef.value?.validate()
-  emit('submit', { ...form })
+  const payload: SamplingRecordForm = {
+    point_id: form.point_id,
+    sampling_date: formatTimestampToDate(form.sampling_date),
+    actual_chime_time: formatTimestampToTime(form.actual_chime_time),
+    noise_level: form.noise_level,
+    sampler_name: form.sampler_name,
+    description: form.description,
+  }
+  emit('submit', payload)
 }
 </script>
 
@@ -81,7 +143,7 @@ async function handleSubmit() {
         v-model:value="form.sampling_date"
         type="date"
         placeholder="选择日期"
-        value-format="yyyy-MM-dd"
+        :teleported="false"
         style="width: 100%"
       />
     </n-form-item>
@@ -91,7 +153,7 @@ async function handleSubmit() {
         v-model:value="form.actual_chime_time"
         placeholder="选择时间"
         format="HH:mm"
-        value-format="HH:mm"
+        :teleported="false"
         style="width: 100%"
       />
     </n-form-item>

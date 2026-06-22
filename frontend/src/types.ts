@@ -41,8 +41,8 @@ export interface SamplingRecord {
 
 export interface SamplingRecordForm {
   point_id: number | null
-  sampling_date: string
-  actual_chime_time: string
+  sampling_date: string | null
+  actual_chime_time: string | null
   noise_level: string
   sampler_name: string
   description: string
@@ -52,8 +52,8 @@ export interface SamplingRecordForm {
 export function emptyRecordForm(): SamplingRecordForm {
   return {
     point_id: null,
-    sampling_date: '',
-    actual_chime_time: '',
+    sampling_date: null,
+    actual_chime_time: null,
     noise_level: '',
     sampler_name: '',
     description: '',

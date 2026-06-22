@@ -61,20 +61,22 @@ const columns: DataTableColumns<SamplingRecord> = [
   {
     title: '采样点',
     key: 'point_id',
-    width: 160,
+    width: 140,
+    ellipsis: { tooltip: true },
     render(row) {
       return pointMap.value.get(row.point_id) ?? `#${row.point_id}`
     },
   },
-  { title: '采样日期', key: 'sampling_date', width: 110 },
-  { title: '报时时间', key: 'actual_chime_time', width: 100 },
-  { title: '噪声等级', key: 'noise_level', width: 110 },
-  { title: '采样员', key: 'sampler_name', width: 100 },
+  { title: '采样日期', key: 'sampling_date', width: 100 },
+  { title: '报时时间', key: 'actual_chime_time', width: 90 },
+  { title: '噪声等级', key: 'noise_level', width: 90 },
+  { title: '采样员', key: 'sampler_name', width: 80 },
   { title: '说明', key: 'description', ellipsis: { tooltip: true } },
   {
     title: '操作',
     key: 'actions',
-    width: 140,
+    width: 130,
+    fixed: 'right',
     render(row) {
       return [
         h(
@@ -181,7 +183,7 @@ function confirmDelete(row: SamplingRecord) {
 
     <n-layout-content style="padding: 24px">
       <n-card title="采样记录列表">
-        <n-space style="margin-bottom: 16px">
+        <n-space style="margin-bottom: 16px" justify="space-between" wrap>
           <n-select
             :value="selectedPointId"
             :options="pointOptions"
@@ -190,6 +192,9 @@ function confirmDelete(row: SamplingRecord) {
             @update:value="handlePointChange"
             style="width: 260px"
           />
+          <n-text depth="3" style="font-size: 12px">
+            表格内容过多时可横向滚动查看 →
+          </n-text>
         </n-space>
 
         <n-data-table
@@ -198,7 +203,7 @@ function confirmDelete(row: SamplingRecord) {
           :loading="isLoading"
           :bordered="false"
           striped
-          :scroll-x="960"
+          :scroll-x="880"
         />
       </n-card>
 
@@ -208,12 +213,12 @@ function confirmDelete(row: SamplingRecord) {
           closable
         >
           <SamplingRecordFormPanel
-          :model="formModel"
-          :loading="formSubmitting"
-          :sampling-points="samplingPoints"
-          @submit="handleSubmit"
-          @cancel="closeForm"
-        />
+            :model="formModel"
+            :loading="formSubmitting"
+            :sampling-points="samplingPoints"
+            @submit="handleSubmit"
+            @cancel="closeForm"
+          />
         </n-drawer-content>
       </n-drawer>
     </n-layout-content>

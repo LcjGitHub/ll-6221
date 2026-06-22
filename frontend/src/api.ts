@@ -58,7 +58,12 @@ export async function fetchSamplingRecord(id: number): Promise<SamplingRecord> {
 export async function createSamplingRecord(
   payload: SamplingRecordForm
 ): Promise<SamplingRecord> {
-  const body = { ...payload, point_id: payload.point_id ?? 0 }
+  const body = {
+    ...payload,
+    point_id: payload.point_id ?? 0,
+    sampling_date: payload.sampling_date ?? '',
+    actual_chime_time: payload.actual_chime_time ?? '',
+  }
   const { data } = await api.post<SamplingRecord>('/sampling-records', body)
   return data
 }
@@ -68,7 +73,12 @@ export async function updateSamplingRecord(
   id: number,
   payload: SamplingRecordForm
 ): Promise<SamplingRecord> {
-  const body = { ...payload, point_id: payload.point_id ?? 0 }
+  const body = {
+    ...payload,
+    point_id: payload.point_id ?? 0,
+    sampling_date: payload.sampling_date ?? '',
+    actual_chime_time: payload.actual_chime_time ?? '',
+  }
   const { data } = await api.put<SamplingRecord>(`/sampling-records/${id}`, body)
   return data
 }
