@@ -41,6 +41,25 @@ SEED_DATA = [
 ]
 
 
+SOURCE_TYPE_SEED = ["古钟", "电子钟", "鼓声", "其他"]
+
+
+def seed_source_types_if_empty() -> None:
+    """声源类型表为空时写入默认数据。"""
+    conn = get_connection()
+    try:
+        row = conn.execute("SELECT COUNT(*) AS cnt FROM source_types").fetchone()
+        if row and row["cnt"] > 0:
+            return
+        conn.executemany(
+            "INSERT INTO source_types (name) VALUES (?)",
+            [(name,) for name in SOURCE_TYPE_SEED],
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def seed_if_empty() -> None:
     """表为空时写入 5 条种子数据。"""
     conn = get_connection()

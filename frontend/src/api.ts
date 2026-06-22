@@ -5,6 +5,8 @@ import type {
   SamplingPointForm,
   SamplingRecord,
   SamplingRecordForm,
+  SourceType,
+  SourceTypeForm,
   Statistics,
 } from './types'
 
@@ -121,4 +123,23 @@ export async function importSamplingPoints(file: File): Promise<ImportResult> {
     },
   })
   return data
+}
+
+/** 获取全部声源类型 */
+export async function fetchSourceTypes(): Promise<SourceType[]> {
+  const { data } = await api.get<SourceType[]>('/source-types')
+  return data
+}
+
+/** 新增声源类型 */
+export async function createSourceType(
+  payload: SourceTypeForm
+): Promise<SourceType> {
+  const { data } = await api.post<SourceType>('/source-types', payload)
+  return data
+}
+
+/** 删除声源类型 */
+export async function deleteSourceType(id: number): Promise<void> {
+  await api.delete(`/source-types/${id}`)
 }

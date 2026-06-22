@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { reactive, watch, ref } from 'vue'
-import type { FormInst, FormRules } from 'naive-ui'
+import { reactive, watch, ref, computed, onMounted } from 'vue'
+import type { FormInst, FormRules, SelectOption } from 'naive-ui'
 import type { SamplingPointForm } from '../types'
+import { fetchSourceTypes } from '../api'
+import type { SourceType } from '../types'
 
 const props = defineProps<{
   model: SamplingPointForm
@@ -26,19 +28,26 @@ watch(
 
 const rules: FormRules = {
   location: [{ required: true, message: '请输入地点', trigger: 'blur' }],
-  source_type: [{ required: true, message: '请输入声源类型', trigger: 'blur' }],
+  source_type: [{ required: true, message: '请选择声源类型', trigger: 'change' }],
   audible_time_period: [
     { required: true, message: '请输入可听时间段', trigger: 'blur' },
   ],
   direction: [{ required: true, message: '请输入方向', trigger: 'blur' }],
 }
 
-const sourceTypeOptions = [
-  { label: '古钟', value: '古钟' },
-  { label: '电子钟', value: '电子钟' },
-  { label: '鼓声', value: '鼓声' },
-  { label: '其他', value: '其他' },
-]
+const sourceTypes = ref<SourceType[]>([])
+
+const sourceTypeOptions = computed<SelectOption[]>(() =>
+  sourceTypes.value.map((t) => ({ label: t.name, value: t.name }))
+)
+
+onMounted(async () => {
+  try {
+    sourceTypes.value = await fetchSourceTypes()
+  } catch {
+    sourceTypes.value = []
+  }
+})
 
 const directionOptions = [
   { label: '东', value: '东' },

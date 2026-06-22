@@ -3,8 +3,9 @@ import { ref } from 'vue'
 import HomeView from './views/HomeView.vue'
 import SamplingRecordView from './views/SamplingRecordView.vue'
 import StatisticsView from './views/StatisticsView.vue'
+import SourceTypeView from './views/SourceTypeView.vue'
 
-type TabKey = 'overview' | 'points' | 'records'
+type TabKey = 'overview' | 'points' | 'records' | 'source-types'
 
 const activeKey = ref<TabKey>('points')
 </script>
@@ -27,6 +28,9 @@ const activeKey = ref<TabKey>('points')
             </n-tab-pane>
             <n-tab-pane name="records" tab="采样记录管理">
               <SamplingRecordView />
+            </n-tab-pane>
+            <n-tab-pane name="source-types" tab="声源类型管理">
+              <SourceTypeView />
             </n-tab-pane>
           </n-tabs>
         </n-layout>

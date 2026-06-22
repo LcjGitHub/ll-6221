@@ -17,9 +17,11 @@ from schemas import (
     SamplingRecord,
     SamplingRecordCreate,
     SamplingRecordUpdate,
+    SourceType,
+    SourceTypeCreate,
     Statistics,
 )
-from seed import seed_if_empty
+from seed import seed_if_empty, seed_source_types_if_empty
 
 app = FastAPI(title="城市报时声采样点 API", version="1.0.0")
 
@@ -61,6 +63,7 @@ def row_to_record(row) -> SamplingRecord:
 def on_startup() -> None:
     """启动时初始化数据库并写入种子数据。"""
     init_db()
+    seed_source_types_if_empty()
     seed_if_empty()
 
 
@@ -448,5 +451,56 @@ def get_statistics() -> Statistics:
             source_type_counts=source_type_counts,
             direction_counts=direction_counts,
         )
+    finally:
+        conn.close()
+
+
+@app.get("/api/source-types", response_model=list[SourceType])
+def list_source_types() -> list[SourceType]:
+    """获取全部声源类型。"""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM source_types ORDER BY id ASC"
+        ).fetchall()
+        return [SourceType(id=row["id"], name=row["name"]) for row in rows]
+    finally:
+        conn.close()
+
+
+@app.post("/api/source-types", response_model=SourceType, status_code=201)
+def create_source_type(payload: SourceTypeCreate) -> SourceType:
+    """新增声源类型。"""
+    conn = get_connection()
+    try:
+        existing = conn.execute(
+            "SELECT id FROM source_types WHERE name = ?", (payload.name,)
+        ).fetchone()
+        if existing is not None:
+            raise HTTPException(status_code=400, detail="声源类型已存在")
+        cursor = conn.execute(
+            "INSERT INTO source_types (name) VALUES (?)",
+            (payload.name,),
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT * FROM source_types WHERE id = ?", (cursor.lastrowid,)
+        ).fetchone()
+        return SourceType(id=row["id"], name=row["name"])
+    finally:
+        conn.close()
+
+
+@app.delete("/api/source-types/{type_id}", status_code=204)
+def delete_source_type(type_id: int) -> None:
+    """删除声源类型。"""
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            "DELETE FROM source_types WHERE id = ?", (type_id,)
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="声源类型不存在")
     finally:
         conn.close()

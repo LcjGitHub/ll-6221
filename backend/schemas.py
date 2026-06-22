@@ -72,3 +72,18 @@ class ImportResult(BaseModel):
     skip_count: int
     failed_count: int
     errors: list[str]
+
+
+class SourceTypeCreate(BaseModel):
+    """创建声源类型。"""
+
+    name: str = Field(..., min_length=1, description="声源类型名称")
+
+
+class SourceType(BaseModel):
+    """声源类型响应。"""
+
+    id: int
+    name: str
+
+    model_config = {"from_attributes": True}

@@ -75,3 +75,13 @@ export interface ImportResult {
   failed_count: number
   errors: string[]
 }
+
+/** 声源类型字典 */
+export interface SourceType {
+  id: number
+  name: string
+}
+
+export interface SourceTypeForm {
+  name: string
+}
