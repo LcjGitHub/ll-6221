@@ -6,7 +6,7 @@ import StatisticsView from './views/StatisticsView.vue'
 
 type TabKey = 'overview' | 'points' | 'records'
 
-const activeKey = ref<TabKey>('overview')
+const activeKey = ref<TabKey>('points')
 </script>
 
 <template>

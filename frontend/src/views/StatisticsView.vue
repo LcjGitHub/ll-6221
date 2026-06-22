@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAsyncState } from '@vueuse/core'
 import { fetchStatistics } from '../api'
+
+const hasError = ref(false)
 
 const { state: statistics, isLoading } = useAsyncState(fetchStatistics, null, {
   immediate: true,
   resetOnExecute: false,
+  onError() {
+    hasError.value = true
+  },
+  onSuccess() {
+    hasError.value = false
+  },
 })
+
+const showError = computed(() => hasError.value && !statistics.value)
 
 const sourceTypeEntries = computed(() => {
   if (!statistics.value) return []
@@ -196,7 +206,7 @@ function getDirectionCardStyle(direction: string): Record<string, string> {
             </n-gi>
           </n-grid>
         </div>
-        <n-empty v-else description="加载失败" />
+        <n-empty v-else-if="showError" description="加载失败" />
       </n-spin>
     </n-layout-content>
   </n-layout>
