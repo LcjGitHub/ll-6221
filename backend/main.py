@@ -13,6 +13,7 @@ from schemas import (
     SamplingRecord,
     SamplingRecordCreate,
     SamplingRecordUpdate,
+    Statistics,
 )
 from seed import seed_if_empty
 
@@ -292,5 +293,34 @@ def delete_sampling_record(record_id: int) -> None:
         conn.commit()
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="采样记录不存在")
+    finally:
+        conn.close()
+
+
+@app.get("/api/statistics", response_model=Statistics)
+def get_statistics() -> Statistics:
+    """获取统计汇总数据。"""
+    conn = get_connection()
+    try:
+        total_rows = conn.execute(
+            "SELECT COUNT(*) as cnt FROM sampling_points"
+        ).fetchone()
+        total_points = total_rows["cnt"]
+
+        source_type_rows = conn.execute(
+            "SELECT source_type, COUNT(*) as cnt FROM sampling_points GROUP BY source_type"
+        ).fetchall()
+        source_type_counts = {row["source_type"]: row["cnt"] for row in source_type_rows}
+
+        direction_rows = conn.execute(
+            "SELECT direction, COUNT(*) as cnt FROM sampling_points GROUP BY direction"
+        ).fetchall()
+        direction_counts = {row["direction"]: row["cnt"] for row in direction_rows}
+
+        return Statistics(
+            total_points=total_points,
+            source_type_counts=source_type_counts,
+            direction_counts=direction_counts,
+        )
     finally:
         conn.close()

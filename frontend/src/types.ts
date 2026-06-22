@@ -59,3 +59,10 @@ export function emptyRecordForm(): SamplingRecordForm {
     description: '',
   }
 }
+
+/** 统计汇总数据类型 */
+export interface Statistics {
+  total_points: number
+  source_type_counts: Record<string, number>
+  direction_counts: Record<string, number>
+}

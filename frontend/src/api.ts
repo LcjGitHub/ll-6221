@@ -4,6 +4,7 @@ import type {
   SamplingPointForm,
   SamplingRecord,
   SamplingRecordForm,
+  Statistics,
 } from './types'
 
 const api = axios.create({
@@ -86,4 +87,10 @@ export async function updateSamplingRecord(
 /** 删除采样记录 */
 export async function deleteSamplingRecord(id: number): Promise<void> {
   await api.delete(`/sampling-records/${id}`)
+}
+
+/** 获取统计汇总数据 */
+export async function fetchStatistics(): Promise<Statistics> {
+  const { data } = await api.get<Statistics>('/statistics')
+  return data
 }

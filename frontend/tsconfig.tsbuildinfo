@@ -1,1 +1,1 @@
-{"root":["./src/api.ts","./src/main.ts","./src/types.ts","./src/vite-env.d.ts","./src/app.vue","./src/components/samplingpointformpanel.vue","./src/components/samplingrecordformpanel.vue","./src/views/homeview.vue","./src/views/samplingrecordview.vue"],"version":"5.7.3"}
+{"root":["./src/api.ts","./src/main.ts","./src/types.ts","./src/vite-env.d.ts","./src/app.vue","./src/components/samplingpointformpanel.vue","./src/components/samplingrecordformpanel.vue","./src/views/homeview.vue","./src/views/samplingrecordview.vue","./src/views/statisticsview.vue"],"version":"5.7.3"}

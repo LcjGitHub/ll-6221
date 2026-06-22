@@ -2,10 +2,11 @@
 import { ref } from 'vue'
 import HomeView from './views/HomeView.vue'
 import SamplingRecordView from './views/SamplingRecordView.vue'
+import StatisticsView from './views/StatisticsView.vue'
 
-type TabKey = 'points' | 'records'
+type TabKey = 'overview' | 'points' | 'records'
 
-const activeKey = ref<TabKey>('points')
+const activeKey = ref<TabKey>('overview')
 </script>
 
 <template>
@@ -18,6 +19,9 @@ const activeKey = ref<TabKey>('points')
             type="line"
             style="padding: 0 24px; border-bottom: 1px solid #e0e0e0"
           >
+            <n-tab-pane name="overview" tab="数据概览">
+              <StatisticsView />
+            </n-tab-pane>
             <n-tab-pane name="points" tab="采样点管理">
               <HomeView />
             </n-tab-pane>

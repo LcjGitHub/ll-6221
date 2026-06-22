@@ -54,3 +54,11 @@ class SamplingRecord(SamplingRecordBase):
     id: int
 
     model_config = {"from_attributes": True}
+
+
+class Statistics(BaseModel):
+    """统计汇总数据。"""
+
+    total_points: int
+    source_type_counts: dict[str, int]
+    direction_counts: dict[str, int]
