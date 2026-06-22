@@ -15,7 +15,7 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """创建采样点表（若不存在）。"""
+    """创建采样点表和采样记录表（若不存在）。"""
     conn = get_connection()
     try:
         conn.execute(
@@ -27,6 +27,20 @@ def init_db() -> None:
                 audible_time_period TEXT NOT NULL,
                 direction TEXT NOT NULL,
                 notes TEXT DEFAULT ''
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sampling_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                point_id INTEGER NOT NULL,
+                sampling_date TEXT NOT NULL,
+                actual_chime_time TEXT NOT NULL,
+                noise_level TEXT NOT NULL,
+                sampler_name TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                FOREIGN KEY (point_id) REFERENCES sampling_points (id) ON DELETE CASCADE
             )
             """
         )

@@ -1,5 +1,10 @@
 import axios from 'axios'
-import type { SamplingPoint, SamplingPointForm } from './types'
+import type {
+  SamplingPoint,
+  SamplingPointForm,
+  SamplingRecord,
+  SamplingRecordForm,
+} from './types'
 
 const api = axios.create({
   baseURL: '/api',
@@ -32,4 +37,43 @@ export async function updateSamplingPoint(
 /** 删除采样点 */
 export async function deleteSamplingPoint(id: number): Promise<void> {
   await api.delete(`/sampling-points/${id}`)
+}
+
+/** 获取采样记录列表，可按采样点筛选 */
+export async function fetchSamplingRecords(
+  pointId?: number
+): Promise<SamplingRecord[]> {
+  const params = pointId != null ? { point_id: pointId } : {}
+  const { data } = await api.get<SamplingRecord[]>('/sampling-records', { params })
+  return data
+}
+
+/** 获取单条采样记录 */
+export async function fetchSamplingRecord(id: number): Promise<SamplingRecord> {
+  const { data } = await api.get<SamplingRecord>(`/sampling-records/${id}`)
+  return data
+}
+
+/** 创建采样记录 */
+export async function createSamplingRecord(
+  payload: SamplingRecordForm
+): Promise<SamplingRecord> {
+  const body = { ...payload, point_id: payload.point_id ?? 0 }
+  const { data } = await api.post<SamplingRecord>('/sampling-records', body)
+  return data
+}
+
+/** 更新采样记录 */
+export async function updateSamplingRecord(
+  id: number,
+  payload: SamplingRecordForm
+): Promise<SamplingRecord> {
+  const body = { ...payload, point_id: payload.point_id ?? 0 }
+  const { data } = await api.put<SamplingRecord>(`/sampling-records/${id}`, body)
+  return data
+}
+
+/** 删除采样记录 */
+export async function deleteSamplingRecord(id: number): Promise<void> {
+  await api.delete(`/sampling-records/${id}`)
 }

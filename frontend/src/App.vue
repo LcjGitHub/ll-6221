@@ -1,12 +1,31 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import HomeView from './views/HomeView.vue'
+import SamplingRecordView from './views/SamplingRecordView.vue'
+
+type TabKey = 'points' | 'records'
+
+const activeKey = ref<TabKey>('points')
 </script>
 
 <template>
   <n-config-provider>
     <n-message-provider>
       <n-dialog-provider>
-        <HomeView />
+        <n-layout style="min-height: 100vh">
+          <n-tabs
+            v-model:value="activeKey"
+            type="line"
+            style="padding: 0 24px; border-bottom: 1px solid #e0e0e0"
+          >
+            <n-tab-pane name="points" tab="采样点管理">
+              <HomeView />
+            </n-tab-pane>
+            <n-tab-pane name="records" tab="采样记录管理">
+              <SamplingRecordView />
+            </n-tab-pane>
+          </n-tabs>
+        </n-layout>
       </n-dialog-provider>
     </n-message-provider>
   </n-config-provider>
